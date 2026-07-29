@@ -721,6 +721,7 @@ function LinkTable() {
 
 function App() {
   const { summary } = report;
+  const topGroups = report.groups.slice(0, 3);
   const topTwoShare = report.groups
     .slice(0, 2)
     .reduce((sum, group) => sum + group.share, 0);
@@ -788,7 +789,7 @@ function App() {
         />
         <div className="executive-grid">
           <article>
-            <strong>28.0%的业务SKU需要动作。</strong>
+            <strong>{formatPct(summary.redundantSkuRate)}的业务SKU需要动作。</strong>
             <p>{formatInt(summary.redundantSku)}个SKU、合计{formatInt(summary.totalExtra)}件待处理；并非所有库存都应“一刀切”清仓。</p>
           </article>
           <article>
@@ -856,7 +857,7 @@ function App() {
       <section className="report-section tinted-section" id="groups">
         <SectionTitle
           eyebrow="01 · Risk concentration"
-          title="男沙组与新品组承担近七成待处理量"
+          title={`${topGroups[0].group}与${topGroups[1].group}承担${formatPct(topTwoShare)}待处理量`}
           description="规模、冗余SKU率、销量承接能力和零预估风险共同决定优先级；大库存头部SKU因销量高，不自动判定为难清。"
         />
         <div className="split-layout">
@@ -868,13 +869,15 @@ function App() {
             <GroupConcentration />
           </div>
           <aside className="insight-card">
-            <span className="insight-number">69%</span>
+            <span className="insight-number">{formatPct(topTwoShare)}</span>
             <h3>前两组别需先建立周度清货节奏</h3>
-            <p>男沙组量最大但倍数相对可承接；新品组规模次之，却需要更高的12月倍数，执行难度更高。</p>
+            <p>{topGroups[0].group}量最大；{topGroups[1].group}规模次之，12月所需倍数为{formatMultiple(topGroups[1].decMultiple)}，需要更密集地复盘实际增销。</p>
             <ul>
-              <li>男沙组：{formatInt(report.groups[0].totalExtra)}件，12月{formatMultiple(report.groups[0].decMultiple)}</li>
-              <li>新品组：{formatInt(report.groups[1].totalExtra)}件，12月{formatMultiple(report.groups[1].decMultiple)}</li>
-              <li>孵化组：体量较小，但12月倍数达到{formatMultiple(report.groups.find((item) => item.group === "孵化组")?.decMultiple)}</li>
+              {topGroups.map((group) => (
+                <li key={`top-${group.group}`}>
+                  {group.group}：{formatInt(group.totalExtra)}件，12月{formatMultiple(group.decMultiple)}
+                </li>
+              ))}
             </ul>
           </aside>
         </div>
@@ -1162,7 +1165,7 @@ function App() {
       <section className="report-section" id="sku">
         <SectionTitle
           eyebrow="08 · SKU workbench"
-          title="4,183个待处理SKU可按组别、品类、负责人和难度筛选"
+          title={`${formatInt(summary.redundantSku)}个待处理SKU可按组别、品类、负责人和难度筛选`}
           description="明细按风险暴露优先级排序。倍数为空代表零预估无正常去化路径，需要单独制定清货动作。"
         />
         <DetailTable />
@@ -1178,7 +1181,7 @@ function App() {
           <article>
             <span className="action-step">P0</span>
             <h3>立即冻结补货并分配责任</h3>
-            <p>男沙组、新品组及零预估高风险SKU先锁定负责人；10月15日前按周推进促销、调拨或移除。</p>
+            <p>{topGroups.slice(0, 2).map((group) => group.group).join("、")}及零预估高风险SKU先锁定负责人；10月15日前按周推进促销、调拨或移除。</p>
           </article>
           <article>
             <span className="action-step">P1</span>
@@ -1218,19 +1221,10 @@ function App() {
             <ul>
               <li>仓储费按FBA明细预计30天费用折算，10月起使用3倍费率。</li>
               <li>VINE后缀链接完全排除业务冗余、占比、费用和优先级。</li>
-              <li>负责人以最新SKU汇总表为准；未分配链接需要补充责任人。</li>
+              <li>组别及负责人以最新SKU汇总表“0-产品信息”页为准；未分组或未分配链接需要补充主数据。</li>
             </ul>
           </article>
         </div>
-        {report.meta.sourceCorrections.length > 0 && (
-          <div className="quality-note">
-            <strong>交叉校验修正</strong>
-            <p>
-              Excel“组别风险特征”页中一条P2记录的组别文本与“两节点销量倍数”汇总不一致；
-              本报告按相同待处理量交叉校验后显示为“{report.meta.sourceCorrections[0].corrected}”，数值未改变。
-            </p>
-          </div>
-        )}
       </section>
 
       <footer>
