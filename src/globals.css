@@ -407,6 +407,18 @@ main {
   gap: 12px;
 }
 
+.overview-metrics {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.overview-metrics .metric-card strong {
+  font-size: clamp(17px, 1.4vw, 20px);
+}
+
+.revenue-metrics .metric-card strong {
+  font-size: clamp(18px, 1.7vw, 22px);
+}
+
 .metric-card {
   position: relative;
   min-height: 160px;

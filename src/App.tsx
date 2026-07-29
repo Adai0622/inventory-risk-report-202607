@@ -284,6 +284,51 @@ type ReportData = {
     difficulty: string;
     alert: string;
   }>;
+  recoverableRevenue: {
+    parameters: {
+      stage1PriceRetention: number;
+      stage2PriceRetention: number;
+      currency: string;
+      pricePriority: string[];
+    };
+    overall: {
+      totalExtraUnits: number;
+      stage1Units: number;
+      stage2Units: number;
+      referenceRevenueUpper: number;
+      recommendedRevenue: number;
+      priceConcession: number;
+      recovery25: number;
+      recovery50: number;
+      recovery75: number;
+      recovery100: number;
+    };
+    quality: {
+      redundantSkuCount: number;
+      pricedSkuCount: number;
+      pricedExtraUnits: number;
+      unpricedExtraUnits: number;
+      priceCoverage: number;
+      unpricedLink: string;
+    };
+    groups: Array<{
+      group: string;
+      skuCount: number;
+      pricedSkuCount: number;
+      totalExtraUnits: number;
+      stage1Units: number;
+      stage2Units: number;
+      stage1RecoverableRevenue: number;
+      stage2RecoverableRevenue: number;
+      recommendedRevenue: number;
+      recoveryShare: number;
+      priceCoverage: number;
+      recovery25: number;
+      recovery50: number;
+      recovery75: number;
+      recovery100: number;
+    }>;
+  };
 };
 
 const report = rawData as unknown as ReportData;
@@ -454,6 +499,36 @@ function GroupConcentration() {
             />
           </div>
           <span>{formatInt(item.totalExtra)}件</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RevenueGroupBars() {
+  const maxValue = Math.max(
+    ...report.recoverableRevenue.groups.map((item) => item.recommendedRevenue),
+  );
+  return (
+    <div className="bar-chart" role="img" aria-label="各组别加速出清可新增回收销售额">
+      {report.recoverableRevenue.groups.map((item) => (
+        <div className="bar-row" key={`revenue-${item.group}`}>
+          <div className="bar-label">
+            <span>{item.group}</span>
+            <strong>{formatMoney(item.recommendedRevenue)}</strong>
+          </div>
+          <div className="bar-track">
+            <div
+              className="bar-fill storage-1"
+              style={{
+                width: `${Math.max((item.recommendedRevenue / maxValue) * 100, 2)}%`,
+              }}
+            />
+          </div>
+          <p>
+            占全部回收额{formatPct(item.recoveryShare)} · 节点新增销量
+            {formatInt(item.totalExtraUnits)}件
+          </p>
         </div>
       ))}
     </div>
@@ -721,6 +796,7 @@ function LinkTable() {
 
 function App() {
   const { summary } = report;
+  const recovery = report.recoverableRevenue;
   const topGroups = report.groups.slice(0, 3);
   const topTwoShare = report.groups
     .slice(0, 2)
@@ -745,6 +821,7 @@ function App() {
           <a href="#overview">总览</a>
           <a href="#groups">组别</a>
           <a href="#sales">增销</a>
+          <a href="#revenue">销售额</a>
           <a href="#storage">仓储费</a>
           <a href="#sku">SKU明细</a>
         </div>
@@ -804,9 +881,13 @@ function App() {
             <strong>12月底清零方案节约最多。</strong>
             <p>预计仓储费降至{formatMoney(summary.storageDecClear)}，较无动作节约{formatMoney(summary.storageSavingDec)}。</p>
           </article>
+          <article>
+            <strong>加快出清可新增回收毛销售额。</strong>
+            <p>推荐价保情景100%完成可新增回收{formatMoney(recovery.overall.recommendedRevenue)}，其中{report.recoverableRevenue.groups[0].group}占{formatPct(report.recoverableRevenue.groups[0].recoveryShare)}。</p>
+          </article>
         </div>
 
-        <div className="metric-grid" aria-label="关键指标">
+        <div className="metric-grid overview-metrics" aria-label="关键指标">
           <MetricCard
             label="业务口径SKU"
             value={formatInt(summary.businessSku)}
@@ -834,6 +915,12 @@ function App() {
             label="最高仓储费节约"
             value={formatMoney(summary.storageSavingDec)}
             note="12月底全部库存健康"
+            tone="positive"
+          />
+          <MetricCard
+            label="推荐可回收销售额"
+            value={formatMoney(recovery.overall.recommendedRevenue)}
+            note={`完成50%可回收${formatMoney(recovery.overall.recovery50)}`}
             tone="positive"
           />
         </div>
@@ -972,9 +1059,113 @@ function App() {
         </div>
       </section>
 
+      <section className="report-section" id="revenue">
+        <SectionTitle
+          eyebrow="03 · Recoverable revenue"
+          title={`加速出清100%完成可新增回收${formatMoney(recovery.overall.recommendedRevenue)}`}
+          description={`按10月底FBA新增销量${formatPct(recovery.parameters.stage1PriceRetention)}价保、12月底全部出清新增销量${formatPct(recovery.parameters.stage2PriceRetention)}价保估算。该口径是相对正常销量额外回收的毛销售额，不是利润。`}
+        />
+
+        <div className="metric-grid revenue-metrics" aria-label="可回收销售额情景">
+          <MetricCard
+            label="参考价销售额上限"
+            value={formatMoney(recovery.overall.referenceRevenueUpper)}
+            note="按参考均价、不让利的理论上限"
+          />
+          <MetricCard
+            label="25%完成"
+            value={formatMoney(recovery.overall.recovery25)}
+            note="节点新增销量完成四分之一"
+          />
+          <MetricCard
+            label="50%完成"
+            value={formatMoney(recovery.overall.recovery50)}
+            note="节点新增销量完成一半"
+            tone="accent"
+          />
+          <MetricCard
+            label="75%完成"
+            value={formatMoney(recovery.overall.recovery75)}
+            note="节点新增销量完成四分之三"
+            tone="positive"
+          />
+          <MetricCard
+            label="100%完成"
+            value={formatMoney(recovery.overall.recovery100)}
+            note={`${formatInt(recovery.overall.totalExtraUnits)}件新增销量全部完成`}
+            tone="positive"
+          />
+        </div>
+
+        <div className="split-layout">
+          <div className="chart-card">
+            <header>
+              <h3>组别可回收销售额排名</h3>
+              <p>美元；推荐价保情景100%完成</p>
+            </header>
+            <RevenueGroupBars />
+          </div>
+          <aside className="insight-card">
+            <span className="insight-number">
+              {formatPct(recovery.quality.priceCoverage)}
+            </span>
+            <h3>新增销量已有参考价格覆盖</h3>
+            <p>
+              {formatInt(recovery.quality.pricedExtraUnits)}件有价，
+              {formatInt(recovery.quality.unpricedExtraUnits)}件未覆盖；未覆盖部分未按0元计入。
+            </p>
+            <ul>
+              <li>未覆盖链接：{recovery.quality.unpricedLink}</li>
+              <li>价格优先：{recovery.parameters.pricePriority.join(" → ")}</li>
+              <li>价保让利空间：{formatMoney(recovery.overall.priceConcession)}</li>
+            </ul>
+          </aside>
+        </div>
+
+        <div className="table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>组别</th>
+                <th className="numeric">节点新增销量</th>
+                <th className="numeric">价格覆盖率</th>
+                <th className="numeric">10月底可回收</th>
+                <th className="numeric">12月底可回收</th>
+                <th className="numeric">推荐可回收合计</th>
+                <th className="numeric">回收额占比</th>
+                <th className="numeric">50%完成</th>
+                <th className="numeric">100%完成</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recovery.groups.map((row) => (
+                <tr key={`recovery-row-${row.group}`}>
+                  <td><strong>{row.group}</strong></td>
+                  <td className="numeric">{formatInt(row.totalExtraUnits)}</td>
+                  <td className="numeric">{formatPct(row.priceCoverage)}</td>
+                  <td className="numeric">{formatMoney(row.stage1RecoverableRevenue)}</td>
+                  <td className="numeric">{formatMoney(row.stage2RecoverableRevenue)}</td>
+                  <td className="numeric total-cell">{formatMoney(row.recommendedRevenue)}</td>
+                  <td className="numeric">{formatPct(row.recoveryShare)}</td>
+                  <td className="numeric">{formatMoney(row.recovery50)}</td>
+                  <td className="numeric">{formatMoney(row.recovery100)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="quality-note">
+          <strong>销售额口径</strong>
+          <p>
+            仅计算相对正常销量额外完成两节点新增销量后可能回收的毛销售额；
+            未扣Amazon平台费、广告费、折扣券、退货、税费和产品成本，也不等同于利润或现金净流入。
+          </p>
+        </div>
+      </section>
+
       <section className="report-section tinted-section" id="inventory">
         <SectionTitle
-          eyebrow="03 · Inventory runway"
+          eyebrow="04 · Inventory runway"
           title="正常销量下，业务库存到12月底仍有20.4万件"
           description="月末库存从7月的69.3万件降至12月的20.4万件，但正常去化不足以完全消除冗余，因此仍需要两节点增销。"
         />
@@ -1002,7 +1193,7 @@ function App() {
 
       <section className="report-section" id="storage">
         <SectionTitle
-          eyebrow="04 · Storage economics"
+          eyebrow="05 · Storage economics"
           title="仓储费节约主要来自10月前把FBA拉回健康线"
           description="10月起按3倍费率测算；10月底FBA健康已经实现大部分节约，12月底清零进一步减少11–12月费用。"
         />
@@ -1055,7 +1246,7 @@ function App() {
 
       <section className="report-section tinted-section" id="difficulty">
         <SectionTitle
-          eyebrow="05 · Clearance difficulty"
+          eyebrow="06 · Clearance difficulty"
           title="冗余数量大不等于难清，销量承接能力才是关键"
           description="清货难度以两个节点的最大所需倍数为主；头部SKU下调一级、长尾SKU上调一级，避免把高销量头部SKU误判为高难度。"
         />
@@ -1098,7 +1289,7 @@ function App() {
 
       <section className="report-section" id="categories">
         <SectionTitle
-          eyebrow="06 · Category & link actions"
+          eyebrow="07 · Category & link actions"
           title="品类决定资源投向，链接清单决定谁来执行"
           description="品类用于横向比较风险规模；各品类Top 10链接用于落实负责人、两节点增销量和仓储费结果。"
         />
@@ -1124,7 +1315,7 @@ function App() {
 
       <section className="report-section tinted-section" id="owners">
         <SectionTitle
-          eyebrow="07 · Ownership"
+          eyebrow="08 · Ownership"
           title="负责人目标应同时看新增销量与零预估高风险"
           description="只看总量会忽略无法用倍数表达的SKU；负责人需要把常规增销目标和零预估专项动作拆开管理。"
         />
@@ -1164,7 +1355,7 @@ function App() {
 
       <section className="report-section" id="sku">
         <SectionTitle
-          eyebrow="08 · SKU workbench"
+          eyebrow="09 · SKU workbench"
           title={`${formatInt(summary.redundantSku)}个待处理SKU可按组别、品类、负责人和难度筛选`}
           description="明细按风险暴露优先级排序。倍数为空代表零预估无正常去化路径，需要单独制定清货动作。"
         />
@@ -1220,6 +1411,7 @@ function App() {
             <h3>口径与限制</h3>
             <ul>
               <li>仓储费按FBA明细预计30天费用折算，10月起使用3倍费率。</li>
+              <li>可回收销售额是新增毛销售额，未扣平台费、广告、折扣、退货、税费和产品成本。</li>
               <li>VINE后缀链接完全排除业务冗余、占比、费用和优先级。</li>
               <li>组别及负责人以最新SKU汇总表“0-产品信息”页为准；未分组或未分配链接需要补充主数据。</li>
             </ul>
