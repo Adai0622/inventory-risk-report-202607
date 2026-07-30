@@ -830,6 +830,24 @@ function App() {
         </button>
       </nav>
 
+      <nav className="quick-nav" aria-label="快捷定位">
+        <span className="quick-nav-label">快速定位</span>
+        <a className="quick-nav-link" href="#groups">
+          <span className="quick-nav-index">01</span>
+          <span>
+            <strong>查看优先组别</strong>
+            <small>风险排序与责任人</small>
+          </span>
+        </a>
+        <a className="quick-nav-link" href="#sku">
+          <span className="quick-nav-index">02</span>
+          <span>
+            <strong>筛选SKU明细</strong>
+            <small>按维度快速筛选</small>
+          </span>
+        </a>
+      </nav>
+
       <header className="hero" id="top">
         <div className="hero-grid">
           <div className="hero-copy">
@@ -839,10 +857,6 @@ function App() {
               当前不是所有大库存SKU都难清，而是风险集中在少数高冗余率组别、长尾与零预估无去化路径SKU。
               两阶段同步执行，可在10月底把FBA拉回77天健康线，并在12月底清理剩余库存。
             </p>
-            <div className="hero-actions">
-              <a className="primary-button" href="#groups">查看优先组别</a>
-              <a className="secondary-button" href="#sku">筛选SKU明细</a>
-            </div>
           </div>
           <aside className="hero-status">
             <p>报告快照</p>
